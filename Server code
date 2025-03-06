@@ -1,0 +1,197 @@
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+struct sockaddr_in serv_addr, cli_addr;
+char serv_ip[] = "127.0.0.1";
+unsigned short serv_port = 6669;
+int bind1, listenfd, listen1, accept1, r, w, r1, w1, w2, cli_addr_len;
+char buff1[4096], buff2[4096], buff3[4096], buff4[4096], buff5[4096], buff6[4096], buff7[4096], buff8[4096], buff9[4096], reply[4096], find1[4096], ll1[4096], decision[4];
+FILE *fp, *fp1, *fp2;
+
+int main()
+{
+    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenfd < 0) 
+    {
+        printf("\n SERVER ERROR: Cannot create socket\n");
+        exit(1);
+    }
+    printf("\n SERVER: SOCKET created successfully :)\n");
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(serv_port);
+    inet_aton(serv_ip, (&serv_addr.sin_addr));
+
+    bind1 = bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    if (bind1 < 0) 
+    {
+        printf("\n SERVER ERROR: Cannot bind the socket\n");
+        close(listenfd);
+        exit(1);
+    }
+    printf("\n SERVER: SOCKET is binded successfully ;)\n");
+
+    listen1 = listen(listenfd, 5);
+    if (listen1 < 0) 
+    {
+        printf("\n SERVER ERROR: Cannot listen to client connections\n");
+        close(listenfd);
+        exit(1);
+    }
+    printf("\n SERVER: Listening to client connections\n");
+    cli_addr_len = sizeof(cli_addr);
+    
+    accept1 = accept(listenfd, (struct sockaddr*)&cli_addr, &cli_addr_len);
+    if (accept1 < 0) 
+    {
+        printf("\n SERVER ERROR: Cannot accept client connections\n");
+        close(listenfd);
+        exit(1);
+    }
+    printf("\n SERVER: Accepted a client connection :) \n");
+
+    while (1) 
+    {
+        r = read(accept1, buff1, 4096);
+        if (r < 0) 
+        {
+            printf("\n SERVER ERROR: Cannot read\n");
+            close(accept1);
+        } 
+        else 
+        {
+            // Clear buffers at the start of each loop iteration
+            strcpy(buff2, "");
+            strcpy(buff3, "");
+            strcpy(buff4, "");
+            strcpy(buff5, "");
+            reply[0] = '\0'; // Clear the reply buffer
+
+            if (strcmp(buff1, "Bye") != 0) 
+            {
+                strcpy(find1, "find ");
+                puts(buff1);
+                strcat(buff1, "* > list");
+                strcat(find1, buff1);
+                system(find1);
+
+                fp = fopen("list", "r");
+                if (fp == NULL) 
+                {
+                    printf("\n Can't read the file list\n");
+                    close(accept1);
+                }
+
+                while (fgets(buff2, 4096, fp) != NULL) 
+                {
+                    strcat(buff3, buff2);
+                }
+
+                fclose(fp);
+
+                w = write(accept1, buff3, 4096);
+                if (w < 0) 
+                {
+                    printf("\n SERVER ERROR: Cannot write\n");
+                    close(accept1);
+                }
+
+                r1 = read(accept1, buff4, 4096);
+                if (r1 < 0) 
+                {
+                    printf("\n SERVER ERROR: Can't read\n");
+                    close(accept1);
+                }
+                strcpy(buff5, buff4);
+                strcat(buff4, "> filename");
+                strcpy(ll1, "ls -l ");
+                strcat(ll1, buff4);
+                puts(ll1);
+                int a = system(ll1);
+                printf("%d \n", a);
+
+                // Clear other buffers before reusing
+                strcpy(buff6, "");
+                strcpy(buff7, "");
+                strcpy(buff8, "");
+                strcpy(buff9, "");
+
+                fp1 = fopen("filename", "r");
+                if (fp1 == NULL) 
+                {
+                    strcpy(reply, "File does not exist.");
+                    w1 = write(accept1, reply, 4096);
+                    if (w1 < 0) 
+                    {
+                        printf("\n SERVER ERROR: Cannot write\n");
+                        close(accept1);
+                    }
+                    close(accept1);
+                }
+
+                while (fgets(buff6, 4096, fp1) != NULL) 
+                {
+                    strcat(buff7, buff6);
+                }
+
+                fclose(fp1);
+
+                printf("%c \n", buff7[0]);
+
+                if (buff7[0] == 't') 
+                {
+                    strcpy(reply, "It is a directory file, can't open.");
+                    w1 = write(accept1, reply, 4096);
+                    if (w1 < 0) 
+                    {
+                        printf("\n SERVER ERROR: Cannot write\n");
+                        close(accept1);
+                    }
+                } 
+                else if (buff7[3] == 'x') 
+                {
+                    strcpy(reply, "Can't open since it is an executable file");
+                    w1 = write(accept1, reply, 4096);
+                    if (w1 < 0) 
+                    {
+                        printf("\n SERVER ERROR: Cannot write\n");
+                        close(accept1);
+                    }
+                } 
+                else 
+                {
+                    fp2 = fopen(buff5, "r");
+                    if (fp2 == NULL) 
+                    {
+                        printf("\n SERVER ERROR: Can't read\n");
+                        close(accept1);
+                    }
+
+                    while (fgets(buff8, 4096, fp2) != NULL) 
+                    {
+                        strcat(buff9, buff8);
+                    }
+
+                    fclose(fp2);
+
+                    w2 = write(accept1, buff9, 4096);
+                    if (w2 < 0) 
+                    {
+                        printf("\n SERVER ERROR: Cannot write\n");
+                        close(accept1);
+                    }
+                }
+            }
+        }
+    }
+
+    close(accept1);
+    close(listenfd);  
+    return 0;
+}
