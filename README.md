@@ -1,0 +1,2 @@
+# File-Retrieval-and-Attribute-Identification-in-a-Client-Server-Architecture-using-C
+This client-server model in C enables remote file retrieval and analysis. The client sends a filename, and the server verifies its existence. If found, it transfers the file and identifies if it’s an executable, directory, or read-only file. Using socket programming and system calls, it aids in networking, file handling, and remote file management.
